@@ -12,10 +12,21 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+from pathlib import Path
 import pandas as pd
 import joblib
 
 app = FastAPI(title="Adidas Sales API")
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+DATA_FILE = DATA_DIR / "adidas_features.csv"
+MODEL_FILE = DATA_DIR / "model.pkl"
+
+if not DATA_FILE.exists():
+    raise FileNotFoundError(f"Expected data file at {DATA_FILE}")
+if not MODEL_FILE.exists():
+    raise FileNotFoundError(f"Expected model file at {MODEL_FILE}")
 
 # Allow the React dev server to call this API
 app.add_middleware(
@@ -25,8 +36,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-df = pd.read_csv("../data/adidas_features.csv", parse_dates=["Invoice Date"])
-model = joblib.load("../data/model.pkl")
+df = pd.read_csv(DATA_FILE, parse_dates=["Invoice Date"])
+model = joblib.load(MODEL_FILE)
 
 
 def apply_filters(
