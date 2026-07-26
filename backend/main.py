@@ -18,14 +18,19 @@ import joblib
 
 app = FastAPI(title="Adidas Sales API")
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
-DATA_FILE = DATA_DIR / "adidas_features.csv"
-MODEL_FILE = DATA_DIR / "model.pkl"
+BASE_DIR = Path(__file__).resolve().parent
+candidate_dirs = [
+    BASE_DIR / "data",
+    BASE_DIR.parent / "data",
+    Path("/app/data"),
+    Path("/data"),
+]
 
-# Support both local development and Docker/container environments.
-# In containers the data directory may be mounted at /data instead of /app/data.
-for candidate_dir in [DATA_DIR, Path("/data")]:
+DATA_DIR = None
+DATA_FILE = None
+MODEL_FILE = None
+
+for candidate_dir in candidate_dirs:
     candidate_data = candidate_dir / "adidas_features.csv"
     candidate_model = candidate_dir / "model.pkl"
     if candidate_data.exists() and candidate_model.exists():
@@ -34,9 +39,10 @@ for candidate_dir in [DATA_DIR, Path("/data")]:
         MODEL_FILE = candidate_model
         break
 
-if not DATA_FILE.exists() or not MODEL_FILE.exists():
+if DATA_DIR is None or DATA_FILE is None or MODEL_FILE is None:
     raise FileNotFoundError(
-        f"Expected data/model files in one of: {DATA_DIR}, /data"
+        "Expected data/model files in one of: "
+        f"{candidate_dirs[0]}, {candidate_dirs[1]}, {candidate_dirs[2]}, {candidate_dirs[3]}"
     )
 
 # Allow the React dev server to call this API
