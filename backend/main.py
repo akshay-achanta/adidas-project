@@ -23,10 +23,21 @@ DATA_DIR = BASE_DIR / "data"
 DATA_FILE = DATA_DIR / "adidas_features.csv"
 MODEL_FILE = DATA_DIR / "model.pkl"
 
-if not DATA_FILE.exists():
-    raise FileNotFoundError(f"Expected data file at {DATA_FILE}")
-if not MODEL_FILE.exists():
-    raise FileNotFoundError(f"Expected model file at {MODEL_FILE}")
+# Support both local development and Docker/container environments.
+# In containers the data directory may be mounted at /data instead of /app/data.
+for candidate_dir in [DATA_DIR, Path("/data")]:
+    candidate_data = candidate_dir / "adidas_features.csv"
+    candidate_model = candidate_dir / "model.pkl"
+    if candidate_data.exists() and candidate_model.exists():
+        DATA_DIR = candidate_dir
+        DATA_FILE = candidate_data
+        MODEL_FILE = candidate_model
+        break
+
+if not DATA_FILE.exists() or not MODEL_FILE.exists():
+    raise FileNotFoundError(
+        f"Expected data/model files in one of: {DATA_DIR}, /data"
+    )
 
 # Allow the React dev server to call this API
 app.add_middleware(
