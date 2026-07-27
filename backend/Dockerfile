@@ -3,11 +3,11 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Install Python dependencies
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY backend/*.py ./
+COPY *.py ./
 
 # Create empty data directory - files come from volume mount at runtime
 RUN mkdir -p ./data
