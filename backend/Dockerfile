@@ -9,8 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY *.py ./
 
-# Create empty data directory - files come from volume mount at runtime
-RUN mkdir -p ./data
+# Copy the data files from the root data directory into the container's /app/data directory
+COPY data/adidas_features.csv ./data/
+COPY data/model.pkl ./data/
 
 EXPOSE 8000
 
