@@ -1,0 +1,4 @@
+# Don't ignore data directory - it's needed for the build
+!data/
+!data/model.pkl
+!data/adidas_features.csv

@@ -26,6 +26,7 @@ candidate_dirs = [
     Path("/data"),
 ]
 
+# Delayed loading - find data files at startup but don't fail immediately
 DATA_DIR = None
 DATA_FILE = None
 MODEL_FILE = None
@@ -37,13 +38,12 @@ for candidate_dir in candidate_dirs:
         DATA_DIR = candidate_dir
         DATA_FILE = candidate_data
         MODEL_FILE = candidate_model
+        print(f"✓ Found data at: {DATA_DIR}")
         break
 
-if DATA_DIR is None or DATA_FILE is None or MODEL_FILE is None:
-    raise FileNotFoundError(
-        "Expected data/model files in one of: "
-        f"{candidate_dirs[0]}, {candidate_dirs[1]}, {candidate_dirs[2]}, {candidate_dirs[3]}"
-    )
+if DATA_DIR is None:
+    print("⚠ Data files not found at startup. Will attempt to load when needed.")
+    print(f"  Looked in: {candidate_dirs}")
 
 # Allow the React dev server to call this API
 app.add_middleware(
