@@ -34,7 +34,12 @@ const getAPIBase = () => {
   return "";
 };
 
-const API_BASE = getAPIBase();
+const getCleanedAPIBase = () => {
+  const base = getAPIBase();
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+};
+
+const API_BASE = getCleanedAPIBase();
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
