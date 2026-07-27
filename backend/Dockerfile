@@ -9,10 +9,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY backend/*.py ./
 
-# Copy essential data files for application startup
-COPY data/adidas_features.csv ./data/
-COPY data/model.pkl ./data/
-COPY data/trend_model.pkl ./data/
+# Copy essential data files for the model to load
+RUN mkdir -p ./data
+COPY data/adidas_features.csv ./data/adidas_features.csv
+COPY data/model.pkl ./data/model.pkl
 
 EXPOSE 8000
 
