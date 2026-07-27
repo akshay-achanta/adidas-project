@@ -73,15 +73,54 @@ export default function Dashboard() {
     return qs ? `?${qs}` : "";
   }
 
+  const [dataError, setDataError] = useState(null);
+
   useEffect(() => {
+    setDataError(null);
+
+    const checkJsonAndSet = (res, setter) => {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new TypeError("Received non-JSON response from server");
+      }
+      return res.json().then(data => {
+        if (data && data.error) {
+          setDataError(data.error);
+        } else if (data && data.status === "waiting_for_data") {
+          setDataError(data.message || "Data not loaded on backend.");
+        } else {
+          setter(data);
+        }
+      });
+    };
+
     // Summary and trend respect ALL filters (they don't own any dimension).
-    fetch(`${API_BASE}/data/summary${buildQuery(null)}`).then(r => r.json()).then(setSummary);
-    fetch(`${API_BASE}/data/trends${buildQuery(null)}`).then(r => r.json()).then(setTrends);
+    fetch(`${API_BASE}/data/summary${buildQuery(null)}`)
+      .then(r => checkJsonAndSet(r, setSummary))
+      .catch(err => {
+        console.error("Error fetching summary:", err);
+        setDataError("Failed to fetch summary data or backend data is not loaded.");
+      });
+
+    fetch(`${API_BASE}/data/trends${buildQuery(null)}`)
+      .then(r => checkJsonAndSet(r, setTrends))
+      .catch(err => console.error("Error fetching trends:", err));
 
     // Each of these skips its OWN dimension so it always shows all its bars.
-    fetch(`${API_BASE}/data/by-region${buildQuery("region")}`).then(r => r.json()).then(setByRegion);
-    fetch(`${API_BASE}/data/by-sales-method${buildQuery("salesMethod")}`).then(r => r.json()).then(setBySalesMethod);
-    fetch(`${API_BASE}/data/top-products${buildQuery("product")}`).then(r => r.json()).then(setTopProducts);
+    fetch(`${API_BASE}/data/by-region${buildQuery("region")}`)
+      .then(r => checkJsonAndSet(r, setByRegion))
+      .catch(err => console.error("Error fetching region data:", err));
+
+    fetch(`${API_BASE}/data/by-sales-method${buildQuery("salesMethod")}`)
+      .then(r => checkJsonAndSet(r, setBySalesMethod))
+      .catch(err => console.error("Error fetching sales method data:", err));
+
+    fetch(`${API_BASE}/data/top-products${buildQuery("product")}`)
+      .then(r => checkJsonAndSet(r, setTopProducts))
+      .catch(err => console.error("Error fetching top products:", err));
   }, [filters]);
 
   const hasActiveFilters = filters.region || filters.salesMethod || filters.product;
@@ -99,6 +138,12 @@ export default function Dashboard() {
           <button onClick={clearFilters} style={clearButtonStyle}>Clear all filters</button>
         )}
       </div>
+
+      {dataError && (
+        <div style={{ padding: "12px 16px", background: "#fef2f2", color: "#b91c1c", borderRadius: "6px", marginBottom: "20px", border: "1px solid #fee2e2", fontSize: "14px" }}>
+          <strong>Error loading dashboard data:</strong> {dataError}
+        </div>
+      )}
 
       {summary && (
         <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
