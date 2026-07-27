@@ -53,8 +53,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-df = pd.read_csv(DATA_FILE, parse_dates=["Invoice Date"])
-model = joblib.load(MODEL_FILE)
+# Lazy load data - will be loaded on first request
+df = None
+model = None
+
+@app.on_event("startup")
+def load_data():
+    global df, model
+    if DATA_FILE and MODEL_FILE:
+        try:
+            df = pd.read_csv(DATA_FILE, parse_dates=["Invoice Date"])
+            model = joblib.load(MODEL_FILE)
+            print(f"✓ Data loaded successfully at startup from {DATA_DIR}")
+        except Exception as e:
+            print(f"⚠ Failed to load data at startup: {e}")
+    else:
+        print("⚠ Data files not configured - will fail at first request if not mounted")
 
 
 def apply_filters(
@@ -77,6 +91,8 @@ def apply_filters(
 
 @app.get("/")
 def root():
+    if df is None:
+        return {"status": "waiting_for_data", "message": "Data not loaded. Mount volume with data files."}
     return {"status": "ok", "rows": len(df)}
 
 
@@ -86,6 +102,8 @@ def summary(
     sales_method: Optional[str] = None,
     product: Optional[str] = None,
 ):
+    if df is None or model is None:
+        return {"error": "Data not loaded. Mount volume with data files."}
     filtered = apply_filters(df, region, sales_method, product)
     if len(filtered) == 0:
         return {"total_sales": 0, "total_profit": 0, "avg_margin": 0, "total_units": 0}
@@ -103,6 +121,8 @@ def trends(
     sales_method: Optional[str] = None,
     product: Optional[str] = None,
 ):
+    if df is None:
+        return {"error": "Data not loaded. Mount volume with data files."}
     filtered = apply_filters(df, region, sales_method, product)
     monthly = (
         filtered.groupby(filtered["Invoice Date"].dt.to_period("M"))["Total Sales"]
@@ -118,6 +138,8 @@ def by_region(
     sales_method: Optional[str] = None,
     product: Optional[str] = None,
 ):
+    if df is None:
+        return {"error": "Data not loaded. Mount volume with data files."}
     # Note: no 'region' param here on purpose — this chart always shows the
     # full region breakdown so you always have something to click on.
     # It still respects sales_method/product filters from OTHER charts.
@@ -131,6 +153,8 @@ def by_sales_method(
     region: Optional[str] = None,
     product: Optional[str] = None,
 ):
+    if df is None:
+        return {"error": "Data not loaded. Mount volume with data files."}
     filtered = apply_filters(df, region, None, product)
     result = filtered.groupby("Sales Method")["Operating Margin"].mean().reset_index()
     return result.to_dict(orient="records")
@@ -141,6 +165,8 @@ def top_products(
     region: Optional[str] = None,
     sales_method: Optional[str] = None,
 ):
+    if df is None:
+        return {"error": "Data not loaded. Mount volume with data files."}
     filtered = apply_filters(df, region, sales_method, None)
     result = (
         filtered.groupby("Product")["Total Sales"]
@@ -160,6 +186,8 @@ class PredictionInput(BaseModel):
 
 @app.post("/predict")
 def predict(payload: PredictionInput):
+    if model is None:
+        return {"error": "Model not loaded. Mount volume with data files."}
     input_df = pd.DataFrame([{
         "Region": payload.region,
         "Product": payload.product,
