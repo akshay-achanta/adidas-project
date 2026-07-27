@@ -80,11 +80,11 @@ export default function Dashboard() {
 
     const checkJsonAndSet = (res, setter) => {
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        throw new Error(`HTTP error! Status: ${res.status}`);
       }
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new TypeError("Received non-JSON response from server");
+        throw new TypeError("Backend returned HTML/non-JSON content (likely service is offline or starting up)");
       }
       return res.json().then(data => {
         if (data && data.error) {
@@ -102,25 +102,37 @@ export default function Dashboard() {
       .then(r => checkJsonAndSet(r, setSummary))
       .catch(err => {
         console.error("Error fetching summary:", err);
-        setDataError("Failed to fetch summary data or backend data is not loaded.");
+        setDataError(err.message || "Failed to fetch summary data or backend data is not loaded.");
       });
 
     fetch(`${API_BASE}/data/trends${buildQuery(null)}`)
       .then(r => checkJsonAndSet(r, setTrends))
-      .catch(err => console.error("Error fetching trends:", err));
+      .catch(err => {
+        console.error("Error fetching trends:", err);
+        setDataError(err.message || "Failed to fetch trends.");
+      });
 
     // Each of these skips its OWN dimension so it always shows all its bars.
     fetch(`${API_BASE}/data/by-region${buildQuery("region")}`)
       .then(r => checkJsonAndSet(r, setByRegion))
-      .catch(err => console.error("Error fetching region data:", err));
+      .catch(err => {
+        console.error("Error fetching region data:", err);
+        setDataError(err.message || "Failed to fetch region data.");
+      });
 
     fetch(`${API_BASE}/data/by-sales-method${buildQuery("salesMethod")}`)
       .then(r => checkJsonAndSet(r, setBySalesMethod))
-      .catch(err => console.error("Error fetching sales method data:", err));
+      .catch(err => {
+        console.error("Error fetching sales method data:", err);
+        setDataError(err.message || "Failed to fetch sales method data.");
+      });
 
     fetch(`${API_BASE}/data/top-products${buildQuery("product")}`)
       .then(r => checkJsonAndSet(r, setTopProducts))
-      .catch(err => console.error("Error fetching top products:", err));
+      .catch(err => {
+        console.error("Error fetching top products:", err);
+        setDataError(err.message || "Failed to fetch top products.");
+      });
   }, [filters]);
 
   const hasActiveFilters = filters.region || filters.salesMethod || filters.product;
