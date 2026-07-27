@@ -1,4 +1,12 @@
-# Don't ignore data directory - it's needed for the build
-!data/
-!data/model.pkl
-!data/adidas_features.csv
+# Standard exclusions for Docker builds
+.git
+.gitignore
+node_modules
+__pycache__
+.pytest_cache
+.venv
+venv
+*.pyc
+.DS_Store
+notebooks/
+README.md
