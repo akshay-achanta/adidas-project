@@ -16,8 +16,25 @@ import {
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
 
-// Get API base URL from environment or use localhost for development
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+// Get API base URL from environment or derive it intelligently
+const getAPIBase = () => {
+  // If explicitly set in environment (Docker/Railway), use it
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+  
+  // For local development
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+  
+  // In production, if they are served from same host/port (e.g. behind proxy/same Railway service),
+  // we can use a relative URL (empty string) so the browser targets the same host.
+  // If they are separate apps, we fall back to relative paths.
+  return "";
+};
+
+const API_BASE = getAPIBase();
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
